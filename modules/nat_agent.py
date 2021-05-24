@@ -112,13 +112,21 @@ class NatAgent:
 	def add_nat (server, router, vmport, gateway):
 
 		try:
+			assert isinstance(int(vmport), int), 'Argument of wrong type!'
 			# get vm_ports , mapping_ports , router_ports 
 			vm_ports , mapping_ports, router_ports = NatAgent.__agent__.router_ports_querry(router)
 		
 			# add 
 			if (server in vm_ports) and (vmport in vm_ports[server]):
         			mapping = server + ':' + vmport
-        			return 'Server {},port {} has been translated into router {},port {}'.format(server, vmport, gateway, mapping_ports[mapping])
+				response = {
+					'status': 'CREATED',
+					'created_server_port': vmport,
+					'created_router_port': mapping_ports[mapping],
+					'server_ip': server,
+					'gateway': gateway,
+					'message': 'Server port has been PAT already'
+				}
 			
     			else:
         			router_port = str(randint(4000,4100))
@@ -127,28 +135,54 @@ class NatAgent:
                 			router_port = str(randint(4000,4100))
 			
 				NatAgent.__agent__.add_pat(server, router, vmport, router_port, gateway)
-        			return 'Success translated server {},port {} into router {},port {}'.format(server,vmport, gateway, router_port)
+				
+				response = {
+					'status' : 'SUCCESS',
+					'create_router_port': router_port,	
+					'server_ip': server,
+					'create_server_port' : vmport,
+					'gateway': gateway,
+					'message': 'Create PAT successfully'
+				}
+
 		except Exception as e:
 			print(e)
-			return e 
+			response = { 'status': 'ERROR', 'message': 'Wrong type input' }
+		finally:
+			return response	
 
 	# remove port nat funtion
 	@staticmethod
         def remove_nat (server, router, vmport, gateway):
 
 		try:
+			assert isinstance(int(vmport), int), 'Argument of wrong type!'
 			# get vm_ports , mapping_ports , router_ports 
                 	vm_ports , mapping_ports, router_ports = NatAgent.__agent__.router_ports_querry(router)
 			if ( server in vm_ports) and ( vmport in vm_ports[server]):
 				mapping = server + ':' + vmport
 				NatAgent.__agent__.remove_pat(server, router, vmport, mapping_ports[mapping], gateway)
-				return 'Success remove server{},port {} translated on router {},port {}'.format(server,vmport, gateway, mapping_ports[mapping])		
+				response = {
+                                        'status' : 'REMOVED',
+                                        'remove_router_port': mapping_ports[mapping],
+                                        'server_ip': server,
+                                        'remove_server_port' : vmport,
+                                        'gateway': gateway,
+					'message': 'Remove PAT successfully'
+                                }
 			else:
-				return 'Server port has not been translated on router yet'		
+				response = {
+                                        'status' : 'NO CREATED',
+                                        'remove_server_port': vmport,
+                                        'server_ip': server,
+                                        'gateway': gateway,
+					'message': 'The remove port has not been PAT yet'
+                                }
 		except Exception as e:
 			print(e)
-			return e	
-	
+			response = { 'status': 'ERROR', 'message': 'Wrong type input' }
+		finally: 
+			return response
 	# modify port nat function
 	@staticmethod
 	def modify_nat(server, router, vmport, new_router_port, gateway):
@@ -157,14 +191,39 @@ class NatAgent:
 			# get vm_ports , mapping_ports , router_ports 
                 	vm_ports , mapping_ports, router_ports = NatAgent.__agent__.router_ports_querry(router)
 			if (server not in vm_ports) or (vmport not in vm_ports[server]) :
-				return 'Server port has been translated on router yet'
+				response = {
+                                        'status' : 'NO CREATED',
+                                        'server_ip': server,
+                                        'modify_server_port' : vmport,
+                                        'gateway': gateway,
+					'message': 'Server port has not PAT yet'
+                                }
 			elif new_router_port in router_ports:
-				return 'New router port is used'
+				mapping = server + ':' + vmport
+				response = {
+                                        'status' : 'USED',
+					'modified_router_port': mapping_ports[mapping],
+                                        'server_ip': server,
+                                        'modify_server_port' : vmport,
+					'modify_router_port': new_router_port,
+                                        'gateway': gateway,
+					'message': "New router port has been used already"
+                                }
 			else:
 				mapping = server + ':' + vmport
 				NatAgent.__agent__.remove_pat(server, router, vmport, mapping_ports[mapping], gateway)
 				NatAgent.__agent__.add_pat(server, router, vmport, new_router_port, gateway)
-				return 'Modify successfully'
+				response = {
+                                        'status' : 'SUCCESS',
+                                        'modified_router_port': mapping_ports[mapping],
+					'modify_router_port': new_router_port,
+                                        'server_ip': server,
+                                        'modify_server_port' : vmport,
+                                        'gateway': gateway,
+					'message': "Modify PAT successfully"
+                                }
 		except Exception as e:
 			print(e)
-			return e
+			response = { 'status': 'ERROR',  'message': 'Wrong type input' }
+		finally:
+			return response
