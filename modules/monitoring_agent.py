@@ -48,12 +48,12 @@ class MonitorAgent:
 			# get gateway
 			gateway = MonitorAgent.__agent__.conn.network.get_router(namespace).external_gateway_info['external_fixed_ips'][0]['ip_address']
 			server_nat_ports, mapping_ports, router_nat_ports = MonitorAgent.__agent__.router_ports_querry(  'qrouter-' +  namespace )
-			#print(server_nat_ports)
+
                 	if not bool (server_nat_ports): continue 
 
                 	for server_ip,server_ports in server_nat_ports.items():
                         	check = MonitorAgent.__agent__.check_server_life_cycle(server_ip)
-                        	if check is True:
+                        	if check is False:
                                 	for port in server_nat_ports[server_ip]:
                                         	mapping = server_ip + ':' + port
                                         	MonitorAgent.__agent__.remove_pat_request(server_ip,namespace,port,gateway)
@@ -90,42 +90,6 @@ class MonitorAgent:
 
                 response = requests.post(url = url, params = payload).json()	
 		print(response)
-
-
-	@staticmethod
-        def remove_rule(server_ip, namespace, remove_server_port, router_port,gateway):
-                with netns.NetNS(nsname= 'qrouter-' + namespace):
-			nat = iptc.Table(iptc.Table.NAT)
-                        prerouting_chain = iptc.Chain( nat ,"custom-PREROUTING")
-                        postrouting_chain = iptc.Chain(iptc.Table(iptc.Table.NAT),"custom-POSTROUTING")
-                        prerouting_rule, postrouting_rule = MonitorAgent.__agent__.create_rules(server_ip, remove_server_port, router_port,gateway)
-                        prerouting_chain.delete_rule(prerouting_rule)
-                        postrouting_chain.delete_rule(postrouting_rule)
-			nat.close()
-                        nat._cache.clear()
-
-	@staticmethod
-        def create_rules(server_ip, server_port, router_port, gateway):
-                destination = server_ip + ':' +  server_port
-                prerouting_rule = iptc.Rule()
-		prerouting_rule.dst = gateway
-                prerouting_rule.protocol ="tcp"
-                match = iptc.Match(prerouting_rule, "tcp")
-                match.dport = router_port
-                target = prerouting_rule.create_target("DNAT")
-                target.to_destination = destination
-                prerouting_rule.add_match(match)
-                prerouting_rule.target = target
-
-                postrouting_rule = iptc.Rule()
-                postrouting_rule.protocol ="tcp"
-                postrouting_rule.dst = server_ip
-                match = iptc.Match(postrouting_rule, "tcp")
-                match.dport = server_port
-                postrouting_rule.add_match(match)
-                postrouting_rule.target = iptc.Target(postrouting_rule,"MASQUERADE")
-
-                return prerouting_rule, postrouting_rule
 
 	@staticmethod
 	def check_namespace( _ns_ ):
