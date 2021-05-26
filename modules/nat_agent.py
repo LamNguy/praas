@@ -18,77 +18,77 @@ class NatAgent:
 
 		
 	@staticmethod
-	def router_ports_querry( _nsname_ ):
-		with netns.NetNS(nsname= _nsname_):
+	def router_pat_query( router_id ):
+		with netns.NetNS(nsname= router_id):
                         prerouting = iptc.easy.dump_chain('nat','custom-PREROUTING',ipv6=False)
                         postrouting = iptc.easy.dump_chain('nat','custom-POSTROUTING',ipv6=False)
-                        vm_ports = {}
+                        server_nat_ports = {}
                         mapping_ports = {}
-                        router_ports = []
+                        router_nat_ports = []
                         # list vm_port which vm opened (vms)
                         for rule in postrouting:
-                                dst = rule['dst']
-                                dst = dst[:-3]
-                                if dst in vm_ports:
-                                        vm_ports[dst].append(rule['tcp']['dport'])
+                                dst = rule['dst'][:-3]
+                                if dst in server_nat_ports:
+                                        server_nat_ports[dst].append(rule['tcp']['dport'])
                                 else:
-                                        vm_ports[dst] = []
-                                        vm_ports[dst].append(rule['tcp']['dport'])
+                                        server_nat_ports[dst] = []
+                                        server_nat_ports[dst].append(rule['tcp']['dport'])
 
                         for rule in prerouting:
                                 src = rule['target']['DNAT']['to-destination']
                                 dport = rule['tcp']['dport']
                                 # the port which router opened (vmy)
-                                router_ports.append(dport)
+                                router_nat_ports.append(dport)
                                 # mapping the vm_port_opened with router_port_opened
                                 mapping_ports[src] = dport
-                        return vm_ports, mapping_ports, router_ports
+                        return server_nat_ports, mapping_ports, router_nat_ports
 
 	@staticmethod
-        def show_router_port(router):
-                server_ports , mapping_ports, router_ports = NatAgent.__agent__.router_ports_querry(router)
+        def router_pat_info( router_id ):
+                server_nat_ports , mapping_ports, router_nat_ports = NatAgent.__agent__.router_pat_query( router_id )
                 return mapping_ports
 
 	@staticmethod
-	def show_server_router_port_mapping( router , server):
-		server_ports, mapping_ports , router_ports = NatAgent.__agent__.router_ports_querry(router)
+	def router_server_pat_info( router_id , server_ip):
+		server_nat_ports, mapping_ports , router_ports = NatAgent.__agent__.router_pat_query(router_id)
 		response = {}
-		if server in server_ports:
-			for vmport in server_ports[server]:
-				mapping = server + ':' + vmport
-				response[vmport] = mapping_ports[mapping]	
+		if server_ip in server_nat_ports:
+			for server_port in server_nat_ports[server_ip]:
+				mapping = server_ip + ':' + server_port
+				response[server_port] = mapping_ports[mapping]	
 		return response
 		
 
 	@staticmethod
-        def create_rules(server, vmport, router_port):
-                dst = server + ':' +  vmport
+        def create_rules(server_ip, server_port, router_port, gateway):
+                destination = server_ip + ':' +  server_port
                 prerouting_rule = iptc.Rule()
                 prerouting_rule.protocol ="tcp"
+		prerouting_rule.dst = gateway
                 match = iptc.Match(prerouting_rule, "tcp")
                 match.dport = router_port 
                 target = prerouting_rule.create_target("DNAT")
-                target.to_destination = dst
+                target.to_destination = destination 
                 prerouting_rule.add_match(match)
                 prerouting_rule.target = target
 
                 postrouting_rule = iptc.Rule()
                 postrouting_rule.protocol ="tcp"
-                postrouting_rule.dst = server 
+                postrouting_rule.dst = server_ip 
                 match = iptc.Match(postrouting_rule, "tcp")
-                match.dport = vmport
+                match.dport = server_port
                 postrouting_rule.add_match(match)
                 postrouting_rule.target = iptc.Target(postrouting_rule,"MASQUERADE")
 		return prerouting_rule, postrouting_rule
 
 	# add port address translation processing
 	@staticmethod
-        def add_pat(server, router, vmport, router_port, gateway):
-                with netns.NetNS(nsname= router):
+        def add_pat(server_ip, router_id, server_port, router_port, gateway):
+                with netns.NetNS(nsname= router_id):
 			nat = iptc.Table(iptc.Table.NAT)
                         prerouting_chain = iptc.Chain( nat ,"custom-PREROUTING")
                         postrouting_chain = iptc.Chain( nat ,"custom-POSTROUTING")
-			prerouting_rule, postrouting_rule = NatAgent.__agent__.create_rules(server, vmport, router_port)
+			prerouting_rule, postrouting_rule = NatAgent.__agent__.create_rules(server_ip, server_port, router_port, gateway)
 			prerouting_chain.insert_rule(prerouting_rule)
                         postrouting_chain.insert_rule(postrouting_rule)
 			nat.close()
@@ -96,12 +96,12 @@ class NatAgent:
 
 	# port address translation processing
 	@staticmethod
-	def remove_pat(server, router, vmport, router_port, gateway):
-		with netns.NetNS(nsname= router):
+	def remove_pat(server_ip, router_id, server_port, router_port, gateway):
+		with netns.NetNS(nsname= router_id):
 			nat = iptc.Table(iptc.Table.NAT)
                         prerouting_chain = iptc.Chain( nat ,"custom-PREROUTING")
                         postrouting_chain = iptc.Chain( nat ,"custom-POSTROUTING")
-                        prerouting_rule, postrouting_rule = NatAgent.__agent__.create_rules(server, vmport, router_port)
+                        prerouting_rule, postrouting_rule = NatAgent.__agent__.create_rules(server_ip, server_port, router_port, gateway)
                         prerouting_chain.delete_rule(prerouting_rule)
                         postrouting_chain.delete_rule(postrouting_rule)
 			nat.close()
@@ -109,121 +109,121 @@ class NatAgent:
 
 	# add port nat fucntion
 	@staticmethod
-	def add_nat (server, router, vmport, gateway):
+	def add_nat (server_ip, router_id, create_server_port, gateway):
 
 		try:
-			assert isinstance(int(vmport), int), 'Argument of wrong type!'
-			# get vm_ports , mapping_ports , router_ports 
-			vm_ports , mapping_ports, router_ports = NatAgent.__agent__.router_ports_querry(router)
+			assert isinstance(int(create_server_port), int), 'Argument of wrong type!'
+			# get server_nat_ports , mapping_ports , router_nat_ports 
+			server_nat_ports , mapping_ports, router_nat_ports = NatAgent.__agent__.router_pat_query(router_id)
 		
 			# add 
-			if (server in vm_ports) and (vmport in vm_ports[server]):
-        			mapping = server + ':' + vmport
+			if (server_ip in server_nat_ports) and (create_server_port in server_nat_ports[server_ip]):
+        			mapping = server_ip + ':' + create_server_port
 				response = {
 					'status': 'CREATED',
-					'created_server_port': vmport,
+					'created_server_port': create_server_port,
 					'created_router_port': mapping_ports[mapping],
-					'server_ip': server,
+					'server_ip': server_ip,
 					'gateway': gateway,
 					'message': 'Server port has been PAT already'
 				}
 			
     			else:
         			router_port = str(randint(4000,4100))
-        			# check len router_ports if full will make error
-        			while router_port in router_ports:
+        			# check len router_nat_ports if full will make error
+        			while router_port in router_nat_ports:
                 			router_port = str(randint(4000,4100))
 			
-				NatAgent.__agent__.add_pat(server, router, vmport, router_port, gateway)
+				NatAgent.__agent__.add_pat(server_ip, router_id, create_server_port, router_port,gateway)
 				
 				response = {
 					'status' : 'SUCCESS',
 					'create_router_port': router_port,	
-					'server_ip': server,
-					'create_server_port' : vmport,
+					'server_ip': server_ip,
+					'create_server_port' : create_server_port,
 					'gateway': gateway,
 					'message': 'Create PAT successfully'
 				}
 
 		except Exception as e:
 			print(e)
-			response = { 'status': 'ERROR', 'message': 'Wrong type input' }
+			response = { 'status': 'ERROR', 'message': e }
 		finally:
 			return response	
 
 	# remove port nat funtion
 	@staticmethod
-        def remove_nat (server, router, vmport, gateway):
+        def remove_nat (server_ip, router_id, remove_server_port, gateway):
 
 		try:
-			assert isinstance(int(vmport), int), 'Argument of wrong type!'
-			# get vm_ports , mapping_ports , router_ports 
-                	vm_ports , mapping_ports, router_ports = NatAgent.__agent__.router_ports_querry(router)
-			if ( server in vm_ports) and ( vmport in vm_ports[server]):
-				mapping = server + ':' + vmport
-				NatAgent.__agent__.remove_pat(server, router, vmport, mapping_ports[mapping], gateway)
+			assert isinstance(int(remove_server_port), int), 'Argument of wrong type!'
+			# get server_nat_ports , mapping_ports , router_nat_ports 
+                	server_nat_ports , mapping_ports, router_nat_ports = NatAgent.__agent__.router_pat_query(router_id)
+			if ( server_ip in server_nat_ports) and ( remove_server_port in server_nat_ports[server_ip]):
+				mapping = server_ip + ':' + remove_server_port
+				NatAgent.__agent__.remove_pat(server_ip, router_id, remove_server_port, mapping_ports[mapping],gateway)
 				response = {
                                         'status' : 'REMOVED',
                                         'remove_router_port': mapping_ports[mapping],
-                                        'server_ip': server,
-                                        'remove_server_port' : vmport,
+                                        'server_ip': server_ip,
+                                        'remove_server_port' : remove_server_port,
                                         'gateway': gateway,
 					'message': 'Remove PAT successfully'
                                 }
 			else:
 				response = {
                                         'status' : 'NO CREATED',
-                                        'remove_server_port': vmport,
-                                        'server_ip': server,
+                                        'remove_server_port': remove_server_port,
+                                        'server_ip': server_ip,
                                         'gateway': gateway,
 					'message': 'The remove port has not been PAT yet'
                                 }
 		except Exception as e:
-			print(e)
-			response = { 'status': 'ERROR', 'message': 'Wrong type input' }
+			#print(e)
+			response = { 'status': 'ERROR', 'message': e }
 		finally: 
 			return response
 	# modify port nat function
 	@staticmethod
-	def modify_nat(server, router, vmport, new_router_port, gateway):
+	def modify_nat(server_ip, router_id, modify_server_port, modify_router_port, gateway):
 
 		try:
-			# get vm_ports , mapping_ports , router_ports 
-                	vm_ports , mapping_ports, router_ports = NatAgent.__agent__.router_ports_querry(router)
-			if (server not in vm_ports) or (vmport not in vm_ports[server]) :
+			# get server_nat_ports , mapping_ports , router_nat_ports 
+                	server_nat_ports , mapping_ports, router_nat_ports = NatAgent.__agent__.router_pat_query(router_id)
+			if (server_ip not in server_nat_ports) or (modify_server_port not in server_nat_ports[server_ip]) :
 				response = {
                                         'status' : 'NO CREATED',
-                                        'server_ip': server,
-                                        'modify_server_port' : vmport,
+                                        'server_ip': server_ip,
+                                        'modify_server_port' : modify_server_port,
                                         'gateway': gateway,
 					'message': 'Server port has not PAT yet'
                                 }
-			elif new_router_port in router_ports:
-				mapping = server + ':' + vmport
+			elif modify_router_port in router_nat_ports:
+				mapping = server_ip + ':' + modify_server_port
 				response = {
                                         'status' : 'USED',
 					'modified_router_port': mapping_ports[mapping],
-                                        'server_ip': server,
-                                        'modify_server_port' : vmport,
-					'modify_router_port': new_router_port,
+                                        'server_ip': server_ip,
+                                        'modify_server_port' : modify_server_port,
+					'modify_router_port': modify_router_port,
                                         'gateway': gateway,
-					'message': "New router port has been used already"
+					'message': "New router_id port has been used already"
                                 }
 			else:
-				mapping = server + ':' + vmport
-				NatAgent.__agent__.remove_pat(server, router, vmport, mapping_ports[mapping], gateway)
-				NatAgent.__agent__.add_pat(server, router, vmport, new_router_port, gateway)
+				mapping = server_ip + ':' + modify_server_port
+				NatAgent.__agent__.remove_pat(server_ip, router_id, modify_server_port, mapping_ports[mapping], gateway)
+				NatAgent.__agent__.add_pat(server_ip, router_id, modify_server_port, modify_router_port, gateway)
 				response = {
                                         'status' : 'SUCCESS',
                                         'modified_router_port': mapping_ports[mapping],
-					'modify_router_port': new_router_port,
-                                        'server_ip': server,
-                                        'modify_server_port' : vmport,
+					'modify_router_port': modify_router_port,
+                                        'server_ip': server_ip,
+                                        'modify_server_port' : modify_server_port,
                                         'gateway': gateway,
 					'message': "Modify PAT successfully"
                                 }
 		except Exception as e:
-			print(e)
-			response = { 'status': 'ERROR',  'message': 'Wrong type input' }
+			#print(e)
+			response = { 'status': 'ERROR',  'message': e  }
 		finally:
 			return response
