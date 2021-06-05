@@ -4,10 +4,12 @@ from random import randint
 class NatAgent:
 
 	__agent__ = None
+	logger = None
 	
-	def __init__ (self):
+	def __init__ (self,logger):
 		if NatAgent.__agent__ is None:
 			NatAgent.__agent__ = self
+			NatAgent.logger = logger
 		else:
 			raise Exception('You are allowed to create only one Agent')
 	@staticmethod
@@ -46,6 +48,7 @@ class NatAgent:
 	@staticmethod
         def router_pat_info( router_id ):
                 server_nat_ports , mapping_ports, router_nat_ports = NatAgent.__agent__.router_pat_query( router_id )
+		NatAgent.logger.info('Return pat information on router {}'.format(router_id))
                 return mapping_ports
 
 	@staticmethod
@@ -127,6 +130,7 @@ class NatAgent:
 					'gateway': gateway,
 					'message': 'Server port has been PAT already'
 				}
+				NatAgent.logger.debug('Find existing port {} of server {} which has translated to port {} on router {}'.format(create_server_port, server_ip, mapping_ports[mapping], gateway))
 			
     			else:
         			router_port = str(randint(4000,4100))
@@ -144,9 +148,10 @@ class NatAgent:
 					'gateway': gateway,
 					'message': 'Create PAT successfully'
 				}
+				NatAgent.logger.info('Create port {} of server {} which has translated to port {} on router {}'.format(create_server_port, server_ip, router_port, gateway))
 
 		except Exception as e:
-			print(e)
+			NatAgent.logger.error(e)	
 			response = { 'status': 'ERROR', 'message': e }
 		finally:
 			return response	
@@ -170,6 +175,7 @@ class NatAgent:
                                         'gateway': gateway,
 					'message': 'Remove PAT successfully'
                                 }
+				NatAgent.logger.info('Remove port {} of server {} which has translated to port {} on router {}'.format(remove_server_port, server_ip, mapping_ports[mapping], gateway))
 			else:
 				response = {
                                         'status' : 'NO CREATED',
@@ -178,8 +184,9 @@ class NatAgent:
                                         'gateway': gateway,
 					'message': 'The remove port has not been PAT yet'
                                 }
+				NatAgent.logger.debug('The remove port {} of server {} which has not been translated on router {}'.format(remove_server_port, server_ip,gateway))
 		except Exception as e:
-			#print(e)
+			NatAgent.logger.error(e)
 			response = { 'status': 'ERROR', 'message': e }
 		finally: 
 			return response
@@ -198,6 +205,7 @@ class NatAgent:
                                         'gateway': gateway,
 					'message': 'Server port has not PAT yet'
                                 }
+				NatAgent.logger.debug('Can not modify because port {} of server {} which has not been translated on router {}'.format(modify_server_port, server_ip, gateway))
 			elif modify_router_port in router_nat_ports:
 				mapping = server_ip + ':' + modify_server_port
 				response = {
@@ -209,6 +217,7 @@ class NatAgent:
                                         'gateway': gateway,
 					'message': "New router_id port has been used already"
                                 }
+				NatAgent.logger.debug('Can not modify because port {} of router {} which has translated already'.format(modify_router_port, gateway))
 			else:
 				mapping = server_ip + ':' + modify_server_port
 				NatAgent.__agent__.remove_pat(server_ip, router_id, modify_server_port, mapping_ports[mapping], gateway)
@@ -222,8 +231,9 @@ class NatAgent:
                                         'gateway': gateway,
 					'message': "Modify PAT successfully"
                                 }
+				NatAgent.logger.info('Modify old router port {} to new router port {} on router {} which has translate to port {} of server {}'.format(mapping_ports[mapping],modify_router_port, gateway, modify_server_port,server_ip))
 		except Exception as e:
-			#print(e)
+			NatAgent.logger.error(e)
 			response = { 'status': 'ERROR',  'message': e  }
 		finally:
 			return response

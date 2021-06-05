@@ -1,0 +1,36 @@
+all: praas-pat-agent praas-pat-agent.service
+.PHONY: all praas-pat-agent install uninstall
+lib_dir=/usr/local/lib/praas
+conf_dir=/usr/local/etc/praas
+log_dir=/var/log/praas
+service_dir=/etc/systemd/system
+#venv=$(lib_dir)/venv
+
+install: $(service_dir) praas-pat-agent.service
+
+	echo Installing the service files...
+	cp praas-pat-agent.service $(service_dir)
+	chown root:root $(service_dir)/praas-pat-agent.service
+	chmod 644 $(service_dir)/praas-pat-agent.service
+
+	echo Installing library files...
+	mkdir -p $(lib_dir)
+	cp pat_service.py $(lib_dir)
+	cp -R modules $(lib_dir)
+	chown root:root $(lib_dir)/pat_service.py
+	chmod 644 $(lib_dir)/pat_service.py
+
+	echo Create log files
+	mkdir -p $(log_dir)
+
+	echo Create config files
+	mkdir -p $(conf_dir)
+	cp clouds.yaml $(conf_dir)
+
+
+uninstall:
+	-systemctl stop praas-pat-agent
+	-systemctl disable praas-pat-agent
+	-rm -r $(lib_dir)
+	#-rm -r $(conf_dir)
+	-rm -r $(service_dir)/praas-pat-agent.service

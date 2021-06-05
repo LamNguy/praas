@@ -1,15 +1,15 @@
 import netns
 import requests
-from pyroute2 import NSPopen
 import iptc
-import pyroute2
+
 class MonitorAgent:
 
 	__agent__ = None
-	
-	def __init__ (self,conn):
+	logger = None
+	def __init__ (self,conn,logger):
 		if MonitorAgent.__agent__ is None:
 			MonitorAgent.__agent__ = self
+			MonitorAgent.logger = logger
 		else:
 			raise Exception('You are allowed to create only one Agent')
 
@@ -54,11 +54,12 @@ class MonitorAgent:
                 	for server_ip,server_ports in server_nat_ports.items():
                         	check = MonitorAgent.__agent__.check_server_life_cycle(server_ip)
                         	if check is False:
+					MonitorAgent.logger.info('Detect server with ip {} is deleted, so remove all its pat connection'.format(server_ip))
                                 	for port in server_nat_ports[server_ip]:
                                         	mapping = server_ip + ':' + port
                                         	MonitorAgent.__agent__.remove_pat_request(server_ip,namespace,port,gateway)
                         	else:
-                                	print('VM existed')
+                                	MonitorAgent.logger.info('VM existed')
 
 	@staticmethod
 	def check_server_life_cycle(server_ip):
@@ -76,7 +77,6 @@ class MonitorAgent:
                 return [  i.id for i in MonitorAgent.__agent__.conn.network.routers() ]
 
 
-	#remove_pat = http://controller:3000/pat/remove
 	@staticmethod
 	def remove_pat_request (server_ip, router_id, remove_server_port, gateway):
 		payload = {
@@ -94,9 +94,7 @@ class MonitorAgent:
 	@staticmethod
 	def check_namespace( _ns_ ):
 		try:
-			pyroute2.netns.setns(_ns_)
-			print( _ns_)
-			with NSPopen( _ns_ ,['true']) as proc:
+			with netns.NetNS( nsname = _ns_): 
 
                                 nat = iptc.Table(iptc.Table.NAT)
                                 check_custom_prerouting = next((i for i in nat.chains if i.name == 'custom-PREROUTING'),None)

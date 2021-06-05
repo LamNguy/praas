@@ -1,9 +1,20 @@
 from flask import Flask, request
 from modules.nat_agent import NatAgent
 import json
+import logging
+formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - Level:%(levelname)s - %(message)s')
+logger = logging.getLogger('pat-agent')
+logging.getLogger('pat-agent').setLevel(logging.DEBUG)
+filename = '/var/log/praas/pat-agent.log'
+handler = logging.FileHandler(filename, 'a')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+
+
 
 app = Flask(__name__)
-nat_agent = NatAgent()
+nat_agent = NatAgent(logger)
 
 @app.route('/router_pat',methods=['GET'])
 def list_PAT_mapping():

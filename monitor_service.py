@@ -1,26 +1,34 @@
 from modules.monitoring_agent import MonitorAgent
 import openstack
-from multiprocessing import  TimeoutError , cpu_count 
-from multiprocessing.pool import ThreadPool
 import time
-
+import logging
+formatter = logging.Formatter(
+                '%(asctime)s - %(name)s - Level:%(levelname)s - %(message)s')
+logger = logging.getLogger('monitor-agent')
+logging.getLogger('monitor-agent').setLevel(logging.DEBUG)
+filename = '/var/log/praas/monitor-agent.log'
+handler = logging.FileHandler(filename, 'a')
+handler.setFormatter(formatter)
+logger.addHandler(handler)
+import threading
 try:
-	conn = openstack.connect(cloud = 'openstack')
+	conn = openstack.connection.from_config(cloud = 'openstack')
 	conn.authorize()
-	monitor_agent = MonitorAgent(conn) 
+	monitor_agent = MonitorAgent(conn,logger) 
 	namespaces = monitor_agent.get_namespaces()
 	
 	#for ns in namespaces:
-	#	monitor_agent.check_namespace(ns)
+        #	monitor_agent.check_namespace(ns)
 
-	#for namespace in namespaces:
-	#	router = MonitorAgent.__agent__.conn.network.get_router(namespace)
-	#	print(router.external_gateway_info['external_fixed_ips'][0]['ip_address'])
+	while True:
+		print(1)
+		logger.info(1)
+		#timer = threading.Timer(5,monitor_agent.monitoring)
+		#timer.start()
+		time.sleep(5)
 
-	# monitor and update
-	monitor_agent.monitoring()
 except Exception as e:
-	print(e)
+	logger.error(e)	
 finally:
 	conn.close()
 
