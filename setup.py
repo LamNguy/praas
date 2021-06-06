@@ -12,7 +12,7 @@ setup(
     #url = 'https://github.com/LamNguy/cli_pat',
     python_requires='>=2.7',
     packages=['modules'],
-    scripts=['praas-install'],
+    scripts=['praas-install','praas-uninstall'],
     include_package_data=True,
     install_requires= [
 	'pbr',

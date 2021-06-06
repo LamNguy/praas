@@ -1,15 +1,26 @@
 import netns
 import iptc
 from random import randint
+from  configparser import ConfigParser
 class NatAgent:
 
 	__agent__ = None
 	logger = None
 	
 	def __init__ (self,logger):
+
+		config = ConfigParser()
+		config.read('/usr/local/etc/praas/praas.conf')
+		#config.read('praas.conf')
+		router_port_range  = config['praas']['router_port_range']
+
+
+
 		if NatAgent.__agent__ is None:
 			NatAgent.__agent__ = self
+			NatAgent.router_port_range = router_port_range
 			NatAgent.logger = logger
+
 		else:
 			raise Exception('You are allowed to create only one Agent')
 	@staticmethod
@@ -18,7 +29,7 @@ class NatAgent:
 			NatAgent()
 		return NatAgent.__agent__ 
 
-		
+	# get pat information on a specific router		
 	@staticmethod
 	def router_pat_query( router_id ):
 		with netns.NetNS(nsname= router_id):
@@ -39,9 +50,7 @@ class NatAgent:
                         for rule in prerouting:
                                 src = rule['target']['DNAT']['to-destination']
                                 dport = rule['tcp']['dport']
-                                # the port which router opened (vmy)
                                 router_nat_ports.append(dport)
-                                # mapping the vm_port_opened with router_port_opened
                                 mapping_ports[src] = dport
                         return server_nat_ports, mapping_ports, router_nat_ports
 
@@ -115,11 +124,11 @@ class NatAgent:
 	def add_nat (server_ip, router_id, create_server_port, gateway):
 
 		try:
-			assert isinstance(int(create_server_port), int), 'Argument of wrong type!'
+			assert isinstance(int(create_server_port), int), 'Argument is not integer!'
 			# get server_nat_ports , mapping_ports , router_nat_ports 
 			server_nat_ports , mapping_ports, router_nat_ports = NatAgent.__agent__.router_pat_query(router_id)
 		
-			# add 
+			# check if server port has nat on router? 
 			if (server_ip in server_nat_ports) and (create_server_port in server_nat_ports[server_ip]):
         			mapping = server_ip + ':' + create_server_port
 				response = {
@@ -133,10 +142,11 @@ class NatAgent:
 				NatAgent.logger.debug('Find existing port {} of server {} which has translated to port {} on router {}'.format(create_server_port, server_ip, mapping_ports[mapping], gateway))
 			
     			else:
-        			router_port = str(randint(4000,4100))
+				start, end = NatAgent.router_port_range.split(':')
+        			router_port = str(randint(start,end))
         			# check len router_nat_ports if full will make error
         			while router_port in router_nat_ports:
-                			router_port = str(randint(4000,4100))
+                			router_port = str(randint(start,end))
 			
 				NatAgent.__agent__.add_pat(server_ip, router_id, create_server_port, router_port,gateway)
 				

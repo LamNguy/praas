@@ -11,11 +11,14 @@ handler = logging.FileHandler(filename, 'a')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
-
-
+from  configparser import ConfigParser
+config = ConfigParser()
+#config.read('praas.conf')
+config.read('/usr/local/etc/praas/praas.conf')
+/usr/local/etc/praas
+port = config['praas']['port_app']
 app = Flask(__name__)
 nat_agent = NatAgent(logger)
-
 @app.route('/router_pat',methods=['GET'])
 def list_PAT_mapping():
 	try:
@@ -80,4 +83,4 @@ def modify_PAT_mapping():
                 return e
 	
 
-app.run(debug=True,host='0.0.0.0', port=3000)
+app.run(debug=True,host='0.0.0.0', port=port)

@@ -25,6 +25,4 @@ install: $(service_dir) praas-pat-agent.service
 uninstall:
 	-systemctl stop praas-monitor-agent
 	-systemctl disable praas-monitor-agent
-	-rm -r $(lib_dir)
-	#-rm -r $(conf_dir)
 	-rm -r $(service_dir)/praas-monitor-agent.service

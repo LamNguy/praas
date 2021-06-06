@@ -86,7 +86,7 @@ class MonitorAgent:
                         'gateway': gateway 
                 }
                
-		url = 'http://192.168.0.105:3000/pat/remove'
+		url = 'http://localhost:3000/pat/remove'
 
                 response = requests.post(url = url, params = payload).json()	
 		print(response)
@@ -94,43 +94,41 @@ class MonitorAgent:
 	@staticmethod
 	def check_namespace( _ns_ ):
 		try:
+			MonitorAgent.logger.info('Start check namespace...')
 			with netns.NetNS( nsname = _ns_): 
 
                                 nat = iptc.Table(iptc.Table.NAT)
-                                check_custom_prerouting = next((i for i in nat.chains if i.name == 'custom-PREROUTING'),None)
-                                check_custom_postrouting = next((i for i in nat.chains if i.name == 'custom-POSTROUTING'),None)
-
-                                if check_custom_prerouting is None:
-                                        print('custom-prerouting false')
-                                       	#nat.create_chain('custom-PREROUTING')
+				prerouting_chain = iptc.Chain(iptc.Table(iptc.Table.NAT), "PREROUTING")
+                                postrouting_chain = iptc.Chain(iptc.Table(iptc.Table.NAT), "POSTROUTING")
+				
+				# chech user define chains 
+                                if 'custom-PREROUTNG' not in [ i.name for i in nat.chains ]:
+					MonitorAgent.logger.info('Check custom-prerouting on router {} False'.format(__ns__))
+                                       	nat.create_chain('custom-PREROUTING')
 				else:
-					print('custom-pre true')
-                                if check_custom_postrouting is None:
-                                        print('custom-post-routing false')
-                                       	#nat.create_chain('custom-POSTROUTING')
-				else:
-					print('custom-pos true')
+					MonitorAgent.logger.info('Check custom-prerouting on router {} True'.format(__ns__))
 
-                                pre_chain = iptc.Chain(iptc.Table(iptc.Table.NAT), "PREROUTING")
-                                post_chain = iptc.Chain(iptc.Table(iptc.Table.NAT), "POSTROUTING")
-                                check_prerouting = next(( i for i in pre_chain.rules if i.target.name == 'custom-PREROUTING'),None)
-                                check_postrouting = next(( i for i in post_chain.rules if i.target.name == 'custom-POSTROUTING'),None)
-
-                                if check_prerouting is None:
-                                       print('check prerouting jump false')
-                                       #rule_goto = { 'target': {'goto': 'custom-PREROUTING'}}
-                                       #iptc.easy.insert_rule('nat','PREROUTING',rule_goto)
+                                if 'custom-POSTROUTING' not in [i.name for i in nat.chains]:
+					MonitorAgent.logger.info('Check custom-postrouting on router {} False'.format(__ns__))
+                                       	nat.create_chain('custom-POSTROUTING')
 				else:
-					print('check prerouting jump true')
-                                if check_postrouting is None:
-                                        print('check postrouting jump false')
-                                        #rule_goto = { 'target': {'goto': 'custom-POSTROUTING'}}
-                                        #iptc.easy.insert_rule('nat','POSTROUTING',rule_goto)
-				else:
-					print('check postrouting jump true')
-				nat.close()
-                                nat._cache.clear()
+					MonitorAgent.logger.info('Check custom-postrouting on router {} True'.format(__ns__))
 
+                                if 'custom-PREROUTING' not in [ i.target.name for i in prerouting_chain.rules ]:
+					MonitorAgent.logger.info('Check custom-prerouting reference on router {} False'.format(__ns__))
+                                       	rule_goto = { 'target': 'custom-PREROUTING'}
+                                       	iptc.easy.insert_rule('nat','PREROUTING',rule_goto)
+				else:
+					MonitorAgent.logger.info('Check custom-prerouting reference on router {} True'.format(__ns__))
+
+                                if 'custom-POSTROUTING' not in [ i.target.name for i in postrouting_chain.rules ]:
+					MonitorAgent.logger.info('Check custom-postrouting reference on router {} False'.format(__ns__))
+                                        rule_goto = { 'target': 'custom-POSTROUTING'}
+                                        iptc.easy.insert_rule('nat','POSTROUTING',rule_goto)
+				else:
+					MonitorAgent.logger.info('Check custom-postrouting reference on router {} True'.format(__ns__))
                 except Exception as e:
-                        print(e) 
-
+                	MonitorAgent.logger.error(e) 
+		finally:
+			nat.close()
+                	nat._cache.clear()

@@ -1,5 +1,0 @@
-[openstack]
-controller = 192.168.0.5
-
-[proxy]
-proxy = 192.158.0.5

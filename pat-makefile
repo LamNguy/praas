@@ -26,11 +26,13 @@ install: $(service_dir) praas-pat-agent.service
 	echo Create config files
 	mkdir -p $(conf_dir)
 	cp clouds.yaml $(conf_dir)
+	cp praas.conf $(conf_dir)
 
 
 uninstall:
 	-systemctl stop praas-pat-agent
 	-systemctl disable praas-pat-agent
 	-rm -r $(lib_dir)
-	#-rm -r $(conf_dir)
+	-rm -r $(conf_dir)
+	-rm -r $(log_dir)
 	-rm -r $(service_dir)/praas-pat-agent.service

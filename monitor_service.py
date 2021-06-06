@@ -17,15 +17,15 @@ try:
 	monitor_agent = MonitorAgent(conn,logger) 
 	namespaces = monitor_agent.get_namespaces()
 	
-	#for ns in namespaces:
-        #	monitor_agent.check_namespace(ns)
+	for ns in namespaces:
+        	monitor_agent.check_namespace(ns)
 
 	while True:
 		print(1)
 		logger.info(1)
-		#timer = threading.Timer(5,monitor_agent.monitoring)
-		#timer.start()
-		time.sleep(5)
+		timer = threading.Timer(5,monitor_agent.monitoring)
+		timer.start()
+		time.sleep(30)
 
 except Exception as e:
 	logger.error(e)	
