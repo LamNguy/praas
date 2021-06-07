@@ -1,0 +1,10 @@
+praas-install
+praas-uninstall
+modules/__init__.py
+modules/monitoring_agent.py
+modules/pat_agent.py
+proxy_service_openstack.egg-info/PKG-INFO
+proxy_service_openstack.egg-info/SOURCES.txt
+proxy_service_openstack.egg-info/dependency_links.txt
+proxy_service_openstack.egg-info/requires.txt
+proxy_service_openstack.egg-info/top_level.txt

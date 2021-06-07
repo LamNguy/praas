@@ -6,6 +6,6 @@ Type=simple
 Restart=always
 RestartSec=1
 User=root
-ExecStart= /home/centos/myenv/bin/python /usr/local/lib/praas/pat_service.py
+ExecStart= /home/centos/env/bin/python /usr/local/lib/praas/pat_service.py
 [Install]
 WantedBy=multi-user.target

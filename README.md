@@ -12,7 +12,7 @@ PRaaS is a service which is integrated in OpenStack. It use Port Address Transla
 - Python virtual environment such as __*virtualenv*__ or __*anaconda*__. (optional)
 - Python >= 2.7
 #### 2. Installation
-Thesis project use python interpreter in the current environment. Use virtual environment is a safe and low-risk aprroach for not conflicting and the virtual python interpreter will be choosen. The guide using tool python __*virtualenv*__ for creating environment.
+PRaaS use python interpreter in the current environment. Use virtual environment is a safe and low-risk aprroach for not conflicting and the virtual python interpreter will be choosen. The guide using tool python __*virtualenv*__ for creating environment.
 
 __Create virtual python env__
 ```
