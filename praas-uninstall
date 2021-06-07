@@ -1,2 +1,1 @@
-sudo make uninstall -f pat-makefile
-sudo make uninstall -f monitor-makefile
+sudo make uninstall

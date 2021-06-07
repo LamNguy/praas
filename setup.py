@@ -15,6 +15,7 @@ setup(
     scripts=['praas-install','praas-uninstall'],
     include_package_data=True,
     install_requires= [
+	'configparser',
 	'pbr',
 	'python-iptables',
 	'Flask==1.1.2',

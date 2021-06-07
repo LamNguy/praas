@@ -11,7 +11,7 @@ class MonitorAgent:
 			MonitorAgent.__agent__ = self
 			MonitorAgent.logger = logger
 		else:
-			raise Exception('You are allowed to create only one Agent')
+			raise Exception('Fobidden!, you are allowed to create only one Agent')
 
 		self.conn = conn
 
@@ -49,34 +49,35 @@ class MonitorAgent:
 			gateway = MonitorAgent.__agent__.conn.network.get_router(namespace).external_gateway_info['external_fixed_ips'][0]['ip_address']
 			server_nat_ports, mapping_ports, router_nat_ports = MonitorAgent.__agent__.router_ports_querry(  'qrouter-' +  namespace )
 
+			# if router does not been pat, skip
                 	if not bool (server_nat_ports): continue 
-
+			
+			# check pat information on router
                 	for server_ip,server_ports in server_nat_ports.items():
-                        	check = MonitorAgent.__agent__.check_server_life_cycle(server_ip)
-                        	if check is False:
+                        	if not MonitorAgent.__agent__.check_server_life_cycle(server_ip):
 					MonitorAgent.logger.info('Detect server with ip {} is deleted, so remove all its pat connection'.format(server_ip))
                                 	for port in server_nat_ports[server_ip]:
                                         	mapping = server_ip + ':' + port
                                         	MonitorAgent.__agent__.remove_pat_request(server_ip,namespace,port,gateway)
-                        	else:
-                                	MonitorAgent.logger.info('VM existed')
+						MonitorAgent.logger.info(mapping)
 
+	# check if a server is existed ? 
 	@staticmethod
 	def check_server_life_cycle(server_ip):
                 ports = MonitorAgent.__agent__.conn.network.ports()
                 port = next((i for i in ports if i['fixed_ips'][0]['ip_address'] == server_ip),None)
-		check = False if port is None else True
-                return check 
-
+                return True if port is not None else False 
+	# get router network namespaces
 	@staticmethod
 	def get_namespaces():
 		return [ 'qrouter-' + i.id for i in MonitorAgent.__agent__.conn.network.routers() ]
 
+	# get all routers id  in openstack system
 	@staticmethod
         def get_routers():
                 return [  i.id for i in MonitorAgent.__agent__.conn.network.routers() ]
 
-
+	# send HTTP removing server pat information request to PAT Agent 
 	@staticmethod
 	def remove_pat_request (server_ip, router_id, remove_server_port, gateway):
 		payload = {
@@ -89,44 +90,35 @@ class MonitorAgent:
 		url = 'http://localhost:3000/pat/remove'
 
                 response = requests.post(url = url, params = payload).json()	
-		print(response)
+		MonitorAgent.logger.info(response)
 
+	# check environment of l3-routers
 	@staticmethod
-	def check_namespace( _ns_ ):
+	def check_namespace( __ns__ ):
 		try:
-			MonitorAgent.logger.info('Start check namespace...')
-			with netns.NetNS( nsname = _ns_): 
+			with netns.NetNS( nsname = __ns__): 
 
                                 nat = iptc.Table(iptc.Table.NAT)
 				prerouting_chain = iptc.Chain(iptc.Table(iptc.Table.NAT), "PREROUTING")
                                 postrouting_chain = iptc.Chain(iptc.Table(iptc.Table.NAT), "POSTROUTING")
-				
-				# chech user define chains 
-                                if 'custom-PREROUTNG' not in [ i.name for i in nat.chains ]:
-					MonitorAgent.logger.info('Check custom-prerouting on router {} False'.format(__ns__))
+				# check user define chains 
+                                if 'custom-PREROUTING' not in [ i.name for i in nat.chains ]:
+					MonitorAgent.logger.debug('Check custom-prerouting on router {} False'.format(__ns__))
                                        	nat.create_chain('custom-PREROUTING')
-				else:
-					MonitorAgent.logger.info('Check custom-prerouting on router {} True'.format(__ns__))
 
                                 if 'custom-POSTROUTING' not in [i.name for i in nat.chains]:
-					MonitorAgent.logger.info('Check custom-postrouting on router {} False'.format(__ns__))
+					MonitorAgent.logger.debug('Check custom-postrouting on router {} False'.format(__ns__))
                                        	nat.create_chain('custom-POSTROUTING')
-				else:
-					MonitorAgent.logger.info('Check custom-postrouting on router {} True'.format(__ns__))
 
                                 if 'custom-PREROUTING' not in [ i.target.name for i in prerouting_chain.rules ]:
-					MonitorAgent.logger.info('Check custom-prerouting reference on router {} False'.format(__ns__))
+					MonitorAgent.logger.debug('Check custom-prerouting reference on router {} False'.format(__ns__))
                                        	rule_goto = { 'target': 'custom-PREROUTING'}
                                        	iptc.easy.insert_rule('nat','PREROUTING',rule_goto)
-				else:
-					MonitorAgent.logger.info('Check custom-prerouting reference on router {} True'.format(__ns__))
 
                                 if 'custom-POSTROUTING' not in [ i.target.name for i in postrouting_chain.rules ]:
-					MonitorAgent.logger.info('Check custom-postrouting reference on router {} False'.format(__ns__))
+					MonitorAgent.logger.debug('Check custom-postrouting reference on router {} False'.format(__ns__))
                                         rule_goto = { 'target': 'custom-POSTROUTING'}
                                         iptc.easy.insert_rule('nat','POSTROUTING',rule_goto)
-				else:
-					MonitorAgent.logger.info('Check custom-postrouting reference on router {} True'.format(__ns__))
                 except Exception as e:
                 	MonitorAgent.logger.error(e) 
 		finally:
