@@ -9,7 +9,7 @@ setup(
     author_email='lamchipabc@gmail.com',
     description='Proxy Service integrated with OpenStack',
     long_description_content_type="text/markdown",
-    #url = 'https://github.com/LamNguy/cli_pat',
+    url = 'https://github.com/LamNguy/proxy_pat_agents',
     python_requires='>=2.7',
     packages=['modules'],
     scripts=['praas-install','praas-uninstall'],
