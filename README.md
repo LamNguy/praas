@@ -16,7 +16,7 @@ PRaaS use python interpreter in the current environment. Use virtual environment
 
 __Install virtualenv__
 ```
-pip install virtualenv
+$ pip install virtualenv
 ```
 __Create virtual python env__
 ```
@@ -52,7 +52,7 @@ __Uninstall service__
 $ praas-uninstall
 ```
 #### 3. Configuration
-PRaaS include:
+PRaaS is installed on system including:
 - Log file: _/var/log/praas_
 - Library: _/usr/local/lib/praas_
 - Config file: _/usr/local/etc/praas_
