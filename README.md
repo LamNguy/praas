@@ -93,4 +93,15 @@ $ systemctl status praas-pat-agent.service
 $ systemctl start praas-monitor-agent.service
 $ systemctl status praas-monitor-agent.service
 ```
+#### 5. Notes
+```
+# create user define-chain which referenced to postrouting and prerouting to avoid conflicting
+sudo iptables -t nat -N custom-PREROUTING
+sudo iptables -t nat -N custom-POSTROUTING
+sudo iptables -t nat -I PREROUTING -j custom-PREROUTING
+sudo iptables -t nat -I POSTROUTING -j custom-POSTROUTING
 
+# commandline to create rules in examples
+iptables -t nat -A custom-PREROUTING -p tcp -m tcp --dport 4022 -j DNAT --to 192.168.21.227:22
+iptables -t nat -A custom-POSTROUTING -p tcp -m tcp --dport 22 -d 192.168.21.227 -j MASQUERADE
+```
