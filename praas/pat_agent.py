@@ -137,7 +137,7 @@ class PatAgent:
 					'created_router_port': mapping_ports[mapping],
 					'server_ip': server_ip,
 					'gateway': gateway,
-					'message': 'Server port has been PAT already'
+					'message': 'Server port has been established already'
 				}
 				PatAgent.logger.debug('Find existing port {} of server {} which has translated to port {} on router {}'.format(create_server_port, server_ip, mapping_ports[mapping], gateway))
 			
@@ -156,7 +156,7 @@ class PatAgent:
 					'server_ip': server_ip,
 					'create_server_port' : create_server_port,
 					'gateway': gateway,
-					'message': 'Create PAT successfully'
+					'message': 'Create PAT connection successfully'
 				}
 				PatAgent.logger.info('Create port {} of server {} which has translated to port {} on router {}'.format(create_server_port, server_ip, router_port, gateway))
 
@@ -183,7 +183,7 @@ class PatAgent:
                                         'server_ip': server_ip,
                                         'remove_server_port' : remove_server_port,
                                         'gateway': gateway,
-					'message': 'Remove PAT successfully'
+					'message': 'Remove PAT connection successfully'
                                 }
 				PatAgent.logger.info('Remove port {} of server {} which has translated to port {} on router {}'.format(remove_server_port, server_ip, mapping_ports[mapping], gateway))
 			else:
@@ -192,7 +192,7 @@ class PatAgent:
                                         'remove_server_port': remove_server_port,
                                         'server_ip': server_ip,
                                         'gateway': gateway,
-					'message': 'The remove port has not been PAT yet'
+					'message': 'The remove port has not been established yet'
                                 }
 				PatAgent.logger.debug('The remove port {} of server {} which has not been translated on router {}'.format(remove_server_port, server_ip,gateway))
 		except Exception as e:
@@ -213,7 +213,7 @@ class PatAgent:
                                         'server_ip': server_ip,
                                         'modify_server_port' : modify_server_port,
                                         'gateway': gateway,
-					'message': 'Server port has not PAT yet'
+					'message': 'Server port has not established yet'
                                 }
 				PatAgent.logger.debug('Can not modify because port {} of server {} which has not been translated on router {}'.format(modify_server_port, server_ip, gateway))
 			elif modify_router_port in router_nat_ports:
@@ -225,7 +225,7 @@ class PatAgent:
                                         'modify_server_port' : modify_server_port,
 					'modify_router_port': modify_router_port,
                                         'gateway': gateway,
-					'message': "New router_id port has been used already"
+					'message': "New router port has been used already"
                                 }
 				PatAgent.logger.debug('Can not modify because port {} of router {} which has translated already'.format(modify_router_port, gateway))
 			else:
@@ -239,7 +239,7 @@ class PatAgent:
                                         'server_ip': server_ip,
                                         'modify_server_port' : modify_server_port,
                                         'gateway': gateway,
-					'message': "Modify PAT successfully"
+					'message': "Modify PAT connection successfully"
                                 }
 				PatAgent.logger.info('Modify old router port {} to new router port {} on router {} which has translate to port {} of server {}'.format(mapping_ports[mapping],modify_router_port, gateway, modify_server_port,server_ip))
 		except Exception as e:
