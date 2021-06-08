@@ -1,4 +1,4 @@
-from modules.monitoring_agent import MonitorAgent
+from praas.monitoring_agent import MonitorAgent
 import openstack
 import time
 import logging

@@ -1,5 +1,5 @@
 from flask import Flask, request
-from modules.pat_agent import PatAgent
+from praas.pat_agent import PatAgent
 import json
 import logging
 

@@ -11,7 +11,7 @@ setup(
     long_description_content_type="text/markdown",
     url = 'https://github.com/LamNguy/proxy_pat_agents',
     python_requires='>=2.7',
-    packages=['modules'],
+    packages=find_packages(),
     scripts=['praas-install','praas-uninstall'],
     include_package_data=True,
     install_requires= [
