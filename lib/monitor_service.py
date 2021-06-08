@@ -11,13 +11,18 @@ handler = logging.FileHandler(filename, 'a')
 handler.setFormatter(formatter)
 logger.addHandler(handler)
 
+from  configparser import ConfigParser
+config = ConfigParser()
+config.read('/usr/local/etc/praas/praas.conf')
+
+
 try:
 	conn = openstack.connection.from_config(cloud = 'openstack')
 	conn.authorize()
 	monitor_agent = MonitorAgent(conn,logger) 
-	
+	sec = config['praas']['second_monitoring']	
 	ticker = threading.Event()
-	while not ticker.wait(30):
+	while not ticker.wait(int(sec)):
 		logger.info('Monitor agent is doing job')
 		for ns in monitor_agent.get_namespaces():
 			monitor_agent.check_namespace(ns)

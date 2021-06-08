@@ -1,1 +1,10 @@
-sudo make uninstall
+usage(){
+        echo 'You must run this command in praas project where praas-makefile stored'
+}
+
+a=`ls praas-makefile 2>&1`
+[ "$?" -eq 0 ] || {
+        usage
+        exit
+}
+sudo make uninstall -f praas-makefile

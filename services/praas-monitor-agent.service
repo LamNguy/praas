@@ -2,12 +2,12 @@
 Description=Proxy Service - Monitor Agent for OpenStack
 After=proxyopenstack-pat-agent.target
 [Service]
-Environment=OS_CLIENT_CONFIG_FILE=/usr/local/etc/praas/clouds.yaml
+Environment=
 Type=simple
 Restart=always
 RestartSec=1
 User=root
-ExecStart= /home/centos/env/bin/python /usr/local/lib/praas/monitor_service.py
+ExecStart=
 
 [Install]
 WantedBy=multi-user.target

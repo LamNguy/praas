@@ -1,18 +1,24 @@
 import netns
 import requests
 import iptc
+from  configparser import ConfigParser
+config = ConfigParser()
+config.read('/usr/local/etc/praas/praas.conf')
 
 class MonitorAgent:
 
 	__agent__ = None
 	logger = None
+
 	def __init__ (self,conn,logger):
 		if MonitorAgent.__agent__ is None:
 			MonitorAgent.__agent__ = self
 			MonitorAgent.logger = logger
+			MonitorAgent.port = config['praas']['port_app'] 
 		else:
 			raise Exception('Fobidden!, you are allowed to create only one Agent')
 
+		MonitorAgent.logger.info(MonitorAgent.port)
 		self.conn = conn
 
 	@staticmethod
@@ -87,7 +93,7 @@ class MonitorAgent:
                         'gateway': gateway 
                 }
                
-		url = 'http://localhost:3000/pat/remove'
+		url = 'http://localhost:{}/pat/remove'.format(MonitorAgent.port)
 
                 response = requests.post(url = url, params = payload).json()	
 		MonitorAgent.logger.info(response)

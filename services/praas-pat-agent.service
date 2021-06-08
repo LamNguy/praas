@@ -1,11 +1,11 @@
 [Unit]
-Description=Proxy Service - Port Address Translation for OpenStack
+Description=Proxy PRaaS - Port Address Translation for OpenStack
 After=network.target
 [Service]
 Type=simple
 Restart=always
 RestartSec=1
 User=root
-ExecStart= /home/centos/env/bin/python /usr/local/lib/praas/pat_service.py
+ExecStart=
 [Install]
 WantedBy=multi-user.target

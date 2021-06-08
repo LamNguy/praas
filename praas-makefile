@@ -18,7 +18,7 @@ install:
 	-mkdir -p $(lib_dir)
 	-cp lib/pat_service.py $(lib_dir)
 	-cp lib/monitor_service.py $(lib_dir)
-	-cp -R modules $(lib_dir)
+	-cp -R praas $(lib_dir)
 	-chown root:root $(lib_dir)/pat_service.py
 	-chmod 644 $(lib_dir)/pat_service.py
 	-chown root:root $(lib_dir)/monitor_service.py

@@ -1,11 +1,18 @@
+usage(){
+	echo 'You must run this command in praas project where praas-makefile stored'
+}
 py=$(which python)
-cloud=$(find "$(pwd)" -name clouds.yaml)
-#pat=$(find "$(pwd)" -name pat_service.py)
 pat=/usr/local/lib/praas/pat_service.py
 monitor=/usr/local/lib/praas/monitor_service.py
 cloud=/usr/local/etc/praas/clouds.yaml
-sed -i -e  "s|ExecStart=.*|ExecStart= $py $pat|g" services/praas-pat-agent.service
-sed -i -e  "s|ExecStart=.*|ExecStart= $py $monitor|g" services/praas-monitor-agent.service
-sed -i -e  "s|Environment=.*|Environment=OS_CLIENT_CONFIG_FILE=$cloud|g" services/praas-monitor-agent.service
+a=`ls praas-makefile 2>&1`
 
-sudo make install
+[ "$?" -eq 0 ] || {
+	usage
+	exit
+} 
+sudo make install -f praas-makefile
+sed -i -e  "s|ExecStart=.*|ExecStart= $py $pat|g"  /etc/systemd/system/praas-pat-agent.service
+sed -i -e  "s|ExecStart=.*|ExecStart= $py $monitor|g" /etc/systemd/system/praas-monitor-agent.service
+sed -i -e  "s|Environment=.*|Environment=OS_CLIENT_CONFIG_FILE=$cloud|g" /etc/systemd/system/praas-monitor-agent.service
+

@@ -32,7 +32,7 @@ $ deactivate
 ```
 __Clone the project__
 ```
-$ git clone https://github.com/LamNguy/proxy_pat_agents praas
+$ git clone https://github.com/LamNguy/praas 
 ```
 __Install packages__
 ```
@@ -43,11 +43,11 @@ __If the install fail due to missing package "pbr", install it and re-run instal
 ```
 $ pip install pbr
 ```
-__Install service__
+__Install service (required in the folder project)__
 ```
 $ praas-install
 ```
-__Uninstall service__
+__Uninstall service (required in the folder project)__
 ```
 $ praas-uninstall
 ```
